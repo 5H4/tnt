@@ -4,4 +4,6 @@ __pycache__/
 .env
 .vscode
 models/__pycache__/
+projects/
+load_model/__pycache__/
 
