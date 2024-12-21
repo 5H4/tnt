@@ -5,4 +5,5 @@ fastapi
 transformers
 pydantic
 torch
+accelerate>=0.26.0
 
