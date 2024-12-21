@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TNT Project Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color: #f5f7fa;
+            --sidebar-width: 250px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background-color: var(--primary-color);
+            padding: 20px;
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-menu {
+            margin-top: 20px;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active {
+            background-color: var(--secondary-color);
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            width: calc(100% - var(--sidebar-width));
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        /* Project List Styles */
+        .project-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Chat Interface Styles */
+        .chat-container {
+            display: none;
+            height: calc(100vh - 40px);
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 70%;
+        }
+
+        .message.user {
+            background-color: var(--secondary-color);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            background-color: #f1f1f1;
+            margin-right: auto;
+        }
+
+        .chat-input {
+            height: 60px;
+            display: flex;
+            padding: 10px;
+            background: #f5f5f5;
+        }
+
+        .chat-input input {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
+        /* Response Display */
+        .response {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #instructionsText {
+            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+            padding: 15px;
+        }
+
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        /* File List Styles */
+        .file-list {
+            margin-top: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
+        .file-item:hover {
+            background: #e9ecef;
+        }
+
+        .file-item .remove-btn {
+            color: var(--accent-color);
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .file-item .remove-btn:hover {
+            color: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>TNT Dashboard</h2>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="showSection('projects')">
+                <i class="fas fa-project-diagram"></i> Projects
+            </div>
+            <div class="nav-item" onclick="showSection('create-project')">
+                <i class="fas fa-plus"></i> Create Project
+            </div>
+            <div class="nav-item" onclick="showSection('instructions')">
+                <i class="fas fa-book"></i> Instructions
+            </div>
+            <div class="nav-item" onclick="showSection('file-manager')">
+                <i class="fas fa-file"></i> File Manager
+            </div>
+            <div class="nav-item" onclick="showSection('chat')">
+                <i class="fas fa-comments"></i> Chat
+            </div>
+        </div>
+    </div>
+    <div class="main-content">
+        <!-- Projects Section -->
+        <div id="projects" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>My Projects</h2>
+                    <button class="btn btn-primary" onclick="refreshProjects()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div class="project-list" id="projectsList">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+        </div>
+        <!-- Create Project Section -->
+        <div id="create-project" class="section" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Create New Project</h2>
+                </div>
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="projectName" placeholder="Enter project name">
+                </div>
+                <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+                <div id="createResponse" class="response"></div>
+            </div>
+        </div>
+        <!-- File Manager Section -->
+        <div id="file-manager" class="section" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>File Manager</h2>
+                </div>
+                <div class="form-group">
+                    <label>Project Key</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="projectKey" placeholder="Enter project key">
+                        <button class="btn btn-primary" onclick="loadFileList()">
+                            <i class="fas fa-sync"></i> Load Files
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Upload File</label>
+                    <input type="file" id="fileInput">
+                    <button class="btn btn-primary" onclick="uploadFile()">Upload</button>
+                </div>
+                <div class="form-group">
+                    <label>Project Files</label>
+                    <div id="fileList" class="file-list">
+                        <!-- Files will be listed here -->
+                    </div>
+                </div>
+                <div id="fileResponse" class="response"></div>
+            </div>
+        </div>
+        <!-- Chat Section -->
+        <div id="chat" class="section" style="display: none;">
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Chat messages will appear here -->
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type your message...">
+                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+        <!-- Instructions Section -->
+        <div id="instructions" class="section" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Project Instructions</h2>
+                </div>
+                <div class="form-group">
+                    <label>Project Key</label>
+                    <input type="text" id="instructionsProjectKey" placeholder="Enter project key">
+                </div>
+                <div class="form-group">
+                    <label>Instructions</label>
+                    <textarea id="instructionsText" rows="10" placeholder="Project instructions..."></textarea>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="getInstructions()">
+                        <i class="fas fa-download"></i> Get Instructions
+                    </button>
+                    <button class="btn btn-primary" onclick="saveInstructions()">
+                        <i class="fas fa-save"></i> Save Instructions
+                    </button>
+                </div>
+                <div id="instructionsResponse" class="response"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const ROOT_PROJECT_KEY = 'ffd0260f2cdaa27329c5779cf4866cd1ed93c22e';
+        const API_URL = 'http://localhost:8000';
+        // Navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(sectionId).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+        // Projects
+        async function refreshProjects() {
+            const projectsList = document.getElementById('projectsList');
+            projectsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+            try {
+                // This is a mock implementation - you'll need to implement the actual API endpoint
+                const projects = await fetchProjects();
+                projectsList.innerHTML = projects.map(project => `
+                   <div class="project-card" onclick="openProject('${project.key}')">
+                       <h3>${project.name}</h3>
+                       <p>Created: ${new Date(project.created_at).toLocaleDateString()}</p>
+                   </div>
+               `).join('');
+            } catch (error) {
+                projectsList.innerHTML = `<div class="response">Error: ${error.message}</div>`;
+            }
+        }
+        // Create Project
+        async function createProject() {
+            const name = document.getElementById('projectName').value.trim();
+            const responseDiv = document.getElementById('createResponse');
+
+            // Validate project name
+            if (!name) {
+                responseDiv.innerHTML = '<div class="error">Project name cannot be empty</div>';
+                return;
+            }
+
+            try {
+                // Show loading state
+                responseDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Creating project...</div>';
+
+                const response = await fetch(`${API_URL}/create_project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': ROOT_PROJECT_KEY
+                    },
+                    body: JSON.stringify({ name })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                responseDiv.innerHTML = `
+                    <div class="success">
+                        Project created successfully!<br>
+                        Project Key: <code>${data.message}</code>
+                        <button class="btn btn-primary" onclick="openProject('${data.message}')" style="margin-top: 10px;">
+                            <i class="fas fa-folder-open"></i> Open Project
+                        </button>
+                    </div>
+                `;
+                document.getElementById('projectName').value = '';
+                
+                // Refresh the projects list
+                refreshProjects();
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        // File Management
+        async function loadFileList() {
+            const projectKey = document.getElementById('projectKey').value;
+            const fileList = document.getElementById('fileList');
+            const responseDiv = document.getElementById('fileResponse');
+
+            if (!projectKey) {
+                responseDiv.innerHTML = '<div class="error">Please enter a project key</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        method: 'get_files'
+                    })
+                });
+
+                const files = await response.json();
+                
+                if (!Array.isArray(files)) {
+                    throw new Error('Invalid response format');
+                }
+
+                fileList.innerHTML = files.length > 0 
+                    ? files.map(file => {
+                        const [name, format] = file.file.split('.');
+                        const date = new Date(file.created_at).toLocaleDateString();
+                        return `
+                            <div class="file-item">
+                                <span>${file.file} (${date})</span>
+                                <span class="remove-btn" onclick="removeFile('${name}', '${format}')">
+                                    <i class="fas fa-times"></i>
+                                </span>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<p>No files found</p>';
+
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                fileList.innerHTML = '<p>No files found</p>';
+            }
+        }
+
+        async function uploadFile() {
+            const file = document.getElementById('fileInput').files[0];
+            const projectKey = document.getElementById('projectKey').value;
+            const responseDiv = document.getElementById('fileResponse');
+            
+            if (!file || !projectKey) {
+                responseDiv.innerHTML = '<div class="error">Please select a file and enter project key</div>';
+                return;
+            }
+
+            try {
+                const reader = new FileReader();
+                reader.onload = async function (e) {
+                    const base64File = e.target.result.split(',')[1];
+                    const response = await fetch(`${API_URL}/project`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Project-Key': projectKey
+                        },
+                        body: JSON.stringify({
+                            method: 'upload_file',
+                            file: base64File,
+                            file_name: file.name.split('.')[0],
+                            file_format: file.name.split('.').pop()
+                        })
+                    });
+                    const data = await response.json();
+                    responseDiv.innerHTML = `<div class="success">${data.message}</div>`;
+                    await loadFileList(); // Refresh the file list
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function removeFile(fileName, fileFormat) {
+            const projectKey = document.getElementById('projectKey').value;
+            const responseDiv = document.getElementById('fileResponse');
+            
+            try {
+                const response = await fetch(`${API_URL}/project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        method: 'remove_file',
+                        file_name: fileName,
+                        file_format: fileFormat
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    responseDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                responseDiv.innerHTML = `<div class="success">${data.message || 'File removed successfully'}</div>`;
+                await loadFileList(); // Refresh the file list only on success
+
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Chat functionality
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value;
+            if (!message) return;
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML += `
+               <div class="message user">
+                   ${message}
+               </div>
+           `;
+            messageInput.value = '';
+            // Mock response - replace with actual API call
+            setTimeout(() => {
+                chatMessages.innerHTML += `
+                   <div class="message assistant">
+                       This is a response to: "${message}"
+                   </div>
+               `;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        }
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshProjects();
+        });
+        // Instructions functionality
+        async function getInstructions() {
+            const projectKey = document.getElementById('instructionsProjectKey').value;
+            const responseDiv = document.getElementById('instructionsResponse');
+            const instructionsText = document.getElementById('instructionsText');
+
+            if (!projectKey) {
+                responseDiv.innerHTML = '<div class="error">Please enter a project key</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        method: 'get_instructions'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch instructions');
+                }
+
+                const data = await response.text();
+                instructionsText.value = data;
+                responseDiv.innerHTML = '<div class="success">Instructions loaded successfully</div>';
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function saveInstructions() {
+            const projectKey = document.getElementById('instructionsProjectKey').value;
+            const instructions = document.getElementById('instructionsText').value;
+            const responseDiv = document.getElementById('instructionsResponse');
+
+            if (!projectKey || !instructions) {
+                responseDiv.innerHTML = '<div class="error">Please enter both project key and instructions</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        method: 'edit_instructions',
+                        inst_text: instructions
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    responseDiv.innerHTML = `<div class="error">${data.error}</div>`;
+                } else {
+                    responseDiv.innerHTML = '<div class="success">Instructions saved successfully</div>';
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Update openProject function to also load file list
+        async function openProject(projectKey) {
+            document.getElementById('projectKey').value = projectKey;
+            document.getElementById('instructionsProjectKey').value = projectKey;
+            
+            // Load files when project is opened
+            showSection('file-manager');
+            await loadFileList();
+        }
+
+        async function fetchProjects() {
+            const response = await fetch(`${API_URL}/get_list_of_projects`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Project-Key': ROOT_PROJECT_KEY
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            return data;
+        }
+    </script>
+</body>
+
+</html>

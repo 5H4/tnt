@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+os
+fastapi[standard]
+transformers
+pydantic
+torch
+
