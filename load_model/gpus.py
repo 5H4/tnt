@@ -70,19 +70,19 @@ def get_gpus(request: ChatRequest, project: TNTProject):
                        max_new_tokens=request.max_tokens,
                        temperature=request.temperature,
                        truncation=True)
-        # Extract the last assistant message from the generated response
-        generated_text = ""
-        if isinstance(response, list) and len(response) > 0:
-            for message in response[0]["generated_text"]:
-                if message["role"] == "assistant":
-                    generated_text = message["content"]  # Store the assistant's message
-
-            # If no assistant message found, set generated_text to an empty string
-            if not generated_text:
-                generated_text = ""
-
-        else:
-            generated_text = ""
+            
+            # Extract the generated text from the response
+            generated_text = response[0]['generated_text']
+            
+            # Extract only the last assistant's message
+            # Find the last assistant section
+            parts = generated_text.split("<|im_start|>assistant\n")
+            if len(parts) > 1:
+                last_response = parts[-1].split("<|im_end|>")[0].strip()
+            else:
+                last_response = ""
+                
+            generated_text = last_response
 
         # Create response object
         chat_response = ChatResponse(
