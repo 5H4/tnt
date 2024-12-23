@@ -157,11 +157,56 @@
 
         /* Chat Interface Styles */
         .chat-container {
-            display: none;
+            display: flex;
             height: calc(100vh - 40px);
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
+        }
+
+        .chat-sidebar {
+            width: 250px;
+            border-right: 1px solid #ddd;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conversations-list {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .conversation-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+
+        .conversation-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .conversation-item.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .chat-main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
         }
 
         .chat-messages {
@@ -375,12 +420,25 @@
         <!-- Chat Section -->
         <div id="chat" class="section" style="display: none;">
             <div class="chat-container">
-                <div class="chat-messages" id="chatMessages">
-                    <!-- Chat messages will appear here -->
+                <div class="chat-sidebar">
+                    <div class="chat-sidebar-header">
+                        <h3>Conversations</h3>
+                        <button class="btn btn-primary btn-sm" onclick="startNewConversation()">
+                            <i class="fas fa-plus"></i> New Chat
+                        </button>
+                    </div>
+                    <div class="conversations-list" id="conversationsList">
+                        <!-- Conversations will be listed here -->
+                    </div>
                 </div>
-                <div class="chat-input">
-                    <input type="text" id="messageInput" placeholder="Type your message...">
-                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                <div class="chat-main">
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="messageInput" placeholder="Type your message...">
+                        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -412,13 +470,19 @@
     </div>
     <script>
         const ROOT_PROJECT_KEY = 'ffd0260f2cdaa27329c5779cf4866cd1ed93c22e';
-        const API_URL = 'http://localhost:8000';
+        const API_URL = 'http://localhost:8080';
         // Navigation
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(section => {
                 section.style.display = 'none';
             });
             document.getElementById(sectionId).style.display = 'block';
+
+            // Special handling for chat section
+            if (sectionId === 'chat') {
+                document.querySelector('.chat-container').style.display = 'block';
+            }
+
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
@@ -470,7 +534,7 @@
                 }
 
                 const data = await response.json();
-                
+
                 if (data.error) {
                     throw new Error(data.error);
                 }
@@ -485,7 +549,7 @@
                     </div>
                 `;
                 document.getElementById('projectName').value = '';
-                
+
                 // Refresh the projects list
                 refreshProjects();
             } catch (error) {
@@ -516,12 +580,12 @@
                 });
 
                 const files = await response.json();
-                
+
                 if (!Array.isArray(files)) {
                     throw new Error('Invalid response format');
                 }
 
-                fileList.innerHTML = files.length > 0 
+                fileList.innerHTML = files.length > 0
                     ? files.map(file => {
                         const [name, format] = file.file.split('.');
                         const date = new Date(file.created_at).toLocaleDateString();
@@ -546,7 +610,7 @@
             const file = document.getElementById('fileInput').files[0];
             const projectKey = document.getElementById('projectKey').value;
             const responseDiv = document.getElementById('fileResponse');
-            
+
             if (!file || !projectKey) {
                 responseDiv.innerHTML = '<div class="error">Please select a file and enter project key</div>';
                 return;
@@ -582,7 +646,7 @@
         async function removeFile(fileName, fileFormat) {
             const projectKey = document.getElementById('projectKey').value;
             const responseDiv = document.getElementById('fileResponse');
-            
+
             try {
                 const response = await fetch(`${API_URL}/project`, {
                     method: 'POST',
@@ -613,27 +677,108 @@
         }
 
         // Chat functionality
-        function sendMessage() {
-            const messageInput = document.getElementById('messageInput');
-            const message = messageInput.value;
-            if (!message) return;
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.innerHTML += `
-               <div class="message user">
-                   ${message}
-               </div>
-           `;
-            messageInput.value = '';
-            // Mock response - replace with actual API call
-            setTimeout(() => {
-                chatMessages.innerHTML += `
-                   <div class="message assistant">
-                       This is a response to: "${message}"
-                   </div>
-               `;
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 1000);
+        let currentConversationId = null;
+
+        // Add event listener for Enter key and prevent multiple sends
+        const messageInput = document.getElementById('messageInput');
+        let isSending = false;  // Add flag to prevent multiple sends
+
+
+        async function setCurrentConversationId(conversationId) {
+            currentConversationId = conversationId;
         }
+
+        async function sendMessage() {
+            if (isSending) return;  // Prevent multiple sends
+
+            const message = messageInput.value.trim();
+            const projectKey = document.getElementById('projectKey').value;
+            const chatMessages = document.getElementById('chatMessages');
+
+            if (!message || !projectKey) {
+                alert('Please enter a message and ensure a project is selected');
+                return;
+            }
+
+            try {
+                isSending = true;  // Set flag before sending
+
+                // Add user message to chat
+                chatMessages.innerHTML += `
+                    <div class="message user">
+                        ${escapeHtml(message)}
+                    </div>
+                `;
+                messageInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                const response = await fetch(`${API_URL}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        messages: [{
+                            role: "user",
+                            content: message
+                        }],
+                        conversation_id: currentConversationId || undefined,
+                        model: "gpt-3.5-turbo",
+                        max_tokens: 1000,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+
+                var data = await response.json();
+                data = JSON.parse(data);
+                console.log(data);
+                const assistantMessage = data.choices[0].message.content;
+            
+                
+                chatMessages.innerHTML += `
+                    <div class="message assistant">
+                        ${escapeHtml(assistantMessage)}
+                    </div>
+                `;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                await setCurrentConversationId(data.id);
+                // Refresh conversations list to show any updates
+                await loadConversations();
+
+            } catch (error) {
+                chatMessages.innerHTML += `
+                    <div class="message assistant error">
+                        Error: ${escapeHtml(error.message)}
+                    </div>
+                `;
+            } finally {
+                isSending = false;  // Reset flag after completion
+            }
+        }
+
+        // Add event listener for Enter key
+        messageInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Helper function to escape HTML and prevent XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             refreshProjects();
@@ -712,10 +857,11 @@
         async function openProject(projectKey) {
             document.getElementById('projectKey').value = projectKey;
             document.getElementById('instructionsProjectKey').value = projectKey;
-            
-            // Load files when project is opened
-            showSection('file-manager');
-            await loadFileList();
+
+            // Clear previous chat messages and load conversations
+            document.getElementById('chatMessages').innerHTML = '';
+            showSection('chat');
+            await loadConversations();
         }
 
         async function fetchProjects() {
@@ -737,6 +883,123 @@
             }
 
             return data;
+        }
+
+        async function loadConversations() {
+            const projectKey = document.getElementById('projectKey').value;
+            const conversationsList = document.getElementById('conversationsList');
+
+            try {
+                const response = await fetch(`${API_URL}/project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        method: 'get_list_of_conversations'
+                    })
+                });
+
+                const conversations = await response.json();
+
+                conversationsList.innerHTML = conversations.map(conv => `
+                    <div class="conversation-item ${conv === currentConversationId ? 'active' : ''}">
+                        <div class="conversation-content" onclick="loadConversationMessages('${conv}')">
+                            <div class="conversation-title">${conv || 'Conversation ' + conv}</div>
+                            <div class="conversation-date">${new Date(conv).toLocaleDateString()}</div>
+                        </div>
+                        <button class="remove-conversation-btn" onclick="deleteConversation('${conv}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                conversationsList.innerHTML = `<div class="error">Error loading conversations: ${error.message}</div>`;
+            }
+        }
+
+        async function loadConversationMessages(conversationId) {
+            currentConversationId = conversationId;
+            const projectKey = document.getElementById('projectKey').value;
+            const chatMessages = document.getElementById('chatMessages');
+
+            try {
+                const response = await fetch(`${API_URL}/project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        method: 'get_conversation',
+                        conversation_id: conversationId
+                    })
+                });
+
+                var messages = await response.json();
+                messages = messages.messages;
+
+                chatMessages.innerHTML = messages.map(msg => `
+                    <div class="message ${msg.role}">
+                        ${escapeHtml(msg.content)}
+                    </div>
+                `).join('');
+
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Update active conversation in sidebar
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                document.querySelector(`.conversation-item[onclick*="${conversationId}"]`)?.classList.add('active');
+
+            } catch (error) {
+                chatMessages.innerHTML = `<div class="error">Error loading messages: ${error.message}</div>`;
+            }
+        }
+
+        async function startNewConversation() {
+            currentConversationId = null;
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('messageInput').focus();
+        }
+
+        async function deleteConversation(conversationId) {
+            const projectKey = document.getElementById('projectKey').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/project`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Project-Key': projectKey
+                    },
+                    body: JSON.stringify({
+                        method: 'delete_conversation',
+                        conversation_id: conversationId
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // If current conversation was deleted, clear the chat
+                if (conversationId === currentConversationId) {
+                    currentConversationId = null;
+                    document.getElementById('chatMessages').innerHTML = '';
+                }
+
+                // Refresh conversations list
+                await loadConversations();
+
+            } catch (error) {
+                alert(`Error deleting conversation: ${error.message}`);
+            }
         }
     </script>
 </body>

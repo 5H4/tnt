@@ -3,8 +3,11 @@ import json
 from pydantic import BaseModel
 from datetime import datetime
 import base64
+from typing import Optional
+import uuid
 
 class ProjectAction(BaseModel):
+    conversation_id: str | None = None
     method: str
     file: str | None = None
     file_name: str | None = None
@@ -100,27 +103,55 @@ class TNTProject:
                 projects.append(project_data)
         return projects
     
-    def check_if_conversation_exists(self, conversation_id: str):
-        if os.path.exists(self.project+'/conversation/'+conversation_id):
-            return True
-        else:
-            return False
+    def check_if_conversation_exists(self, conversation_id: str) -> bool:
+        return os.path.exists(self.project + '/conversation/' + conversation_id + '.json')
     
-    def create_conversation(self, conversation_id: str):
-        if self.check_if_conversation_exists(conversation_id):
-            return conversation_id
-        else:
-            conversation_id = self.create_conversation_id()
-            os.makedirs(self.project+'/conversation/'+conversation_id)
-            return conversation_id
+    def create_conversation(self, conversation_id: Optional[str] = None) -> str:
+        # If conversation_id is provided, check if it exists
+        if conversation_id is not None:
+            if self.check_if_conversation_exists(conversation_id):
+                return conversation_id
         
-    def create_conversation_id(self):
-        return str(hash(str(datetime.now().isoformat())))[:10]
-    
-    def save_conversation(self, conversation_id: str, messages: list):
-        with open(self.project+'/conversation/'+conversation_id, 'w') as f:
-            json.dump(messages, f)
+        # Generate new conversation_id if none provided or if provided one doesn't exist
+        new_conversation_id = str(uuid.uuid4())
+        
+        # Create conversations directory if it doesn't exist
+        os.makedirs(self.project + '/conversation', exist_ok=True)
+        
+        instructions_system = self.get_project_instructions()
 
+        system = {"role": "system", "content": instructions_system}
+
+        # Create new conversation file
+        conversation_path = self.project + '/conversation/' + new_conversation_id + '.json'
+        with open(conversation_path, 'w') as f:
+            json.dump({
+                'id': new_conversation_id,
+                'created_at': datetime.now().isoformat(),
+                'messages': [system]
+            }, f)
+        
+        return new_conversation_id
+    
     def get_conversation(self, conversation_id: str):
-        with open(self.project+'/conversation/'+conversation_id, 'r') as f:
+        with open(self.project+'/conversation/'+conversation_id+'.json', 'r') as f:
             return json.load(f)
+        
+    def get_list_of_conversations(self):
+        conversations = os.listdir(self.project+'/conversation')
+        conversations = [conversation.replace('.json', '') for conversation in conversations]
+        return conversations
+
+    def get_conversation_messages(self, conversation_id: str):
+        conversation = self.get_conversation(conversation_id)
+        return conversation['messages']
+    
+    def add_message_to_conversation(self, conversation_id: str, role: str, message: str):
+        conversation = self.get_conversation(conversation_id)
+        conversation['messages'].append({"role": role, "content": message})
+        with open(self.project+'/conversation/'+conversation_id+'.json', 'w') as f:
+            json.dump(conversation, f)
+
+    def delete_conversation(self, conversation_id: str):
+        os.remove(self.project+'/conversation/'+conversation_id+'.json')
+        return {"message": "Conversation deleted successfully"}

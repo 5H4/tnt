@@ -69,6 +69,12 @@ async def project(request: ProjectAction, x_project_key: str = Header(alias="X-P
             return project.get_files()
         elif method == 'get_list_of_projects':
             return project.get_list_of_projects()
+        elif method == 'get_list_of_conversations':
+            return project.get_list_of_conversations()
+        elif method == 'get_conversation':
+            return project.get_conversation(request.conversation_id)
+        elif method == 'delete_conversation':
+            return project.delete_conversation(request.conversation_id)
         
 
         return {"error": "Invalid method"}

@@ -29,6 +29,7 @@ class NewProject:
 
         os.makedirs(self.project+project_key)
         os.makedirs(self.project+project_key+'/data')
+        os.makedirs(self.project+project_key+'/conversation')
 
         project_data = {
             'name': self.name,

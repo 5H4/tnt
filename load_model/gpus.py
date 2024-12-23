@@ -7,27 +7,38 @@ from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from models.project import TNTProject
 
-# Load model and tokenizer
-model = AutoModelForCausalLM.from_pretrained(
-    "meta-llama/Llama-3.3-70B-Instruct",
-    device_map="auto",
-    offload_folder="offload"
-)
-# meta-llama/Llama-3.3-70B-Instruct
-# cognitivecomputations/dolphin-2.9.2-qwen2-72b
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.3-70B-Instruct")
-pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
+#meta-llama/Llama-3.3-70B-Instruct
+dev = True
+
+if dev == False:
+    model_name = 'TinyLlama/TinyLlama-1.1B-Chat-v1.0'
+
+    # Load model and tokenizer
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        device_map="auto",
+        offload_folder="offload"
+    )
+    # meta-llama/Llama-3.3-70B-Instruct
+    # cognitivecomputations/dolphin-2.9.2-qwen2-72b
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
+else :
+    model_name = ''
+    model = None
+    tokenizer = None
+    pipe = None
 
 class Message(BaseModel):
     role: str
     content: str
 
 class ChatRequest(BaseModel):
-    model: str
-    conversation_id: str = "None"
     messages: List[Message]
-    max_tokens: Optional[int] = 1000
-    temperature: Optional[float] = 0.7
+    conversation_id: Optional[str] = None
+    model: str = "gpt-3.5-turbo"
+    max_tokens: int = 1000
+    temperature: float = 0.7
 
 class ChatResponse(BaseModel):
     id: str
@@ -39,15 +50,22 @@ class ChatResponse(BaseModel):
 
 def get_gpus(request: ChatRequest, project: TNTProject):
     conversation_id = project.create_conversation(request.conversation_id)
+
     try:
         # Format messages for the model
-        formatted_messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+        new_messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+        formatted_messages = project.get_conversation_messages(conversation_id)
+        formatted_messages += new_messages
+
+        for msg in new_messages:
+            project.add_message_to_conversation(conversation_id, msg['role'], msg['content'])
         
         # Generate response
-        response = pipe(formatted_messages, 
+        response = None
+        if dev == False:    
+            response = pipe(formatted_messages, 
                        max_length=request.max_tokens,
                        temperature=request.temperature)
-
         # Extract the last assistant message from the generated response
         generated_text = ""
         if isinstance(response, list) and len(response) > 0:
@@ -64,7 +82,7 @@ def get_gpus(request: ChatRequest, project: TNTProject):
 
         # Create response object
         chat_response = ChatResponse(
-            id="chat-" + str(hash(str(formatted_messages)))[:10],
+            id=conversation_id,
             object="chat.completion",
             created=int(time.time()),
             model=request.model,
@@ -83,7 +101,7 @@ def get_gpus(request: ChatRequest, project: TNTProject):
             }
         )
 
-        project.save_conversation(conversation_id, formatted_messages + [{"role": "assistant", "content": generated_text}])
+        project.add_message_to_conversation(conversation_id, "assistant", generated_text)
 
         # Serialize the response to JSON manually using json.dumps
         return JSONResponse(content=json.dumps(chat_response.model_dump()))  # Serialize and return as JSON response
