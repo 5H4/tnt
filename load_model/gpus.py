@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from models.project import TNTProject
 
 #meta-llama/Llama-3.3-70B-Instruct
-dev = True
+dev = False
 
 if dev == False:
     model_name = 'TinyLlama/TinyLlama-1.1B-Chat-v1.0'
