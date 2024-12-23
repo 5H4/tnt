@@ -66,7 +66,8 @@ def get_gpus(request: ChatRequest, project: TNTProject):
             response = pipe(formatted_messages, 
                        max_length=4096,
                        max_new_tokens=request.max_tokens,
-                       temperature=request.temperature)
+                       temperature=request.temperature,
+                       truncation=True)
         # Extract the last assistant message from the generated response
         generated_text = ""
         if isinstance(response, list) and len(response) > 0:
