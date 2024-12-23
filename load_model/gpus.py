@@ -11,7 +11,7 @@ from models.project import TNTProject
 dev = False
 
 if dev == False:
-    model_name = 'TinyLlama/TinyLlama-1.1B-Chat-v1.0'
+    model_name = 'cognitivecomputations/dolphin-2.9.2-qwen2-72b
 
     # Load model and tokenizer
     model = AutoModelForCausalLM.from_pretrained(
