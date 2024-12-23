@@ -62,8 +62,10 @@ def get_gpus(request: ChatRequest, project: TNTProject):
         
         # Generate response
         response = None
-        if dev == False:    
-            response = pipe(formatted_messages, 
+
+        if dev == False:
+            formatted_prompt = format_prompt(formatted_messages)
+            response = pipe(formatted_prompt, 
                        max_length=4096,
                        max_new_tokens=request.max_tokens,
                        temperature=request.temperature,
@@ -110,3 +112,21 @@ def get_gpus(request: ChatRequest, project: TNTProject):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def format_prompt(formatted_messages):
+    prompt = ""
+    
+    # Add system message if present
+    system_msg = next((msg for msg in formatted_messages if msg['role'] == 'system'), None)
+    if system_msg:
+        prompt += f"<|im_start|>system\n{system_msg['content']}<|im_end|>\n"
+    
+    # Add all user/assistant messages in order
+    for msg in formatted_messages:
+        if msg['role'] in ['user', 'assistant']:
+            prompt += f"<|im_start|>{msg['role']}\n{msg['content']}<|im_end|>\n"
+    
+    # Add final assistant token to generate response
+    prompt += "<|im_start|>assistant\n"
+    
+    return prompt
