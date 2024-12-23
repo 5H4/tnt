@@ -65,11 +65,19 @@ def get_gpus(request: ChatRequest, project: TNTProject):
 
         if dev == False:
             formatted_prompt = format_prompt(formatted_messages)
-            response = pipe(formatted_prompt, 
-                       max_length=4096,
-                       max_new_tokens=request.max_tokens,
-                       temperature=request.temperature,
-                       truncation=True)
+            response = pipe(
+                formatted_prompt,
+                max_length=4096,
+                max_new_tokens=request.max_tokens,
+                temperature=request.temperature,
+                top_k=50,
+                top_p=0.95,
+                repetition_penalty=1.1,
+                do_sample=True,
+                truncation=True,
+                pad_token_id=tokenizer.eos_token_id,
+                eos_token_id=tokenizer.eos_token_id
+            )
             
             # Extract the generated text from the response
             generated_text = response[0]['generated_text']
