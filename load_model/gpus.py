@@ -24,7 +24,6 @@ if dev == False:
         torch_dtype="auto",  # Automatically choose best precision
         load_in_8bit=True,   # Use 8-bit quantization for better memory efficiency
         offload_folder="offload",
-        max_memory={i: "20GiB" for i in range(8)},  # Reduced from 22GiB to 20GiB
         trust_remote_code=True
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
