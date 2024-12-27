@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from models.project import TNTProject
 import os
+import torch
 
 # Set environment variable to help with memory fragmentation
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
@@ -21,7 +22,7 @@ if dev == False:
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
-        torch_dtype="auto",  # Automatically choose best precision
+        torch_dtype=torch.float16,  # or torch.bfloat16 or torch.float32
         load_in_8bit=True,   # Use 8-bit quantization for better memory efficiency
         offload_folder="offload",
         max_memory={i: "22GiB" for i in range(8)},  # Reduced from 22GiB to 20GiB
