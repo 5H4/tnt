@@ -8,12 +8,13 @@ from fastapi.responses import JSONResponse
 from models.project import TNTProject
 import os
 import torch
+from utils.file_search import FileSearcher
 
 # Set environment variable to help with memory fragmentation
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 #meta-llama/Llama-3.3-70B-Instruct
-dev = False
+dev = True
 
 if dev == False:
     model_name = 'cognitivecomputations/dolphin-2.9-llama3-8b'
@@ -66,6 +67,9 @@ class ChatResponse(BaseModel):
     choices: List[dict]
     usage: dict
 
+# Initialize file searcher
+file_searcher = FileSearcher()
+
 def get_gpus(request: ChatRequest, project: TNTProject):
     conversation_id = project.create_conversation(request.conversation_id)
 
@@ -73,6 +77,20 @@ def get_gpus(request: ChatRequest, project: TNTProject):
         # Format messages for the model
         new_messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
         formatted_messages = project.get_conversation_messages(conversation_id)
+        
+        # Search for relevant content in project files
+        user_query = new_messages[-1]['content'] if new_messages else ""
+        relevant_content = file_searcher.search(user_query)
+        
+        if relevant_content:
+            # Add relevant content as context
+            context_message = {
+                "role": "system",
+                "content": "Relevant information from project files:\n\n" + \
+                          "\n\n".join([f"From {r['file_path']}:\n{r['content']}" for r in relevant_content])
+            }
+            formatted_messages.insert(0, context_message)
+        
         formatted_messages += new_messages
 
         for msg in new_messages:

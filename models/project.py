@@ -57,6 +57,7 @@ class TNTProject:
             with open(self.project+'/data/'+file_path, 'wb') as f:
                 f.write(content_decode_base64)
             self.write_in_project_json_file(file_path)
+            self.process_file(self.project+'/data/'+file_path)
             return {"message": "File uploaded successfully"}
         
     def remove_file(self, file_name: str, file_format: str):
@@ -155,3 +156,25 @@ class TNTProject:
     def delete_conversation(self, conversation_id: str):
         os.remove(self.project+'/conversation/'+conversation_id+'.json')
         return {"message": "Conversation deleted successfully"}
+    
+    def get_files_paths(self):
+        return [self.project+'/data/'+file for file in os.listdir(self.project+'/data')]
+
+    def process_all_files(self):
+        """Process and index all files in the project's data directory"""
+        from load_model.gpus import file_searcher  # Import here to avoid circular imports
+        
+        file_paths = self.get_files_paths()
+        for file_path in file_paths:
+            try:
+                file_searcher.process_file(file_path, self.project_key)
+            except Exception as e:
+                print(f"Error processing file {file_path}: {e}")
+                continue
+        
+        return {"message": f"Processed {len(file_paths)} files"}
+    
+    def process_file(self, file_path: str) -> None:
+        from load_model.gpus import file_searcher
+        file_searcher.process_file(file_path)  # If file_searcher can extract project info from path
+        
