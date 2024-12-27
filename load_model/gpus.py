@@ -83,6 +83,9 @@ def get_gpus(request: ChatRequest, project: TNTProject):
         relevant_content = file_searcher.search(user_query)
 
         print(relevant_content)
+
+        file_path = None
+        file_content = None
         
         if relevant_content:
             # Add relevant content as context
@@ -91,6 +94,8 @@ def get_gpus(request: ChatRequest, project: TNTProject):
                 "content": "Relevant information from project files:\n\n" + \
                           "\n\n".join([f"From {r['file_path']}:\n{r['content']}" for r in relevant_content])
             }
+            file_path = relevant_content[0]['file_path']
+            file_content = relevant_content[0]['content']
             print(context_message)
             formatted_messages.append(context_message)
         
@@ -145,6 +150,8 @@ def get_gpus(request: ChatRequest, project: TNTProject):
                 },
                 "finish_reason": "stop"
             }],
+            file_path=file_path,
+            file_content=file_content,
             usage={
                 "prompt_tokens": len(formatted_messages),
                 "completion_tokens": len(generated_text.split()),
