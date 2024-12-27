@@ -725,8 +725,14 @@
                         }],
                         conversation_id: currentConversationId || undefined,
                         model: "gpt-3.5-turbo",
+                        max_length: 16000,
                         max_tokens: 100,
-                        temperature: 0.1
+                        temperature: 0.1,
+                        top_k: 50,
+                        top_p: 0.95,
+                        repetition_penalty: 1.1,
+                        do_sample: true,
+                        truncation: true
                     })
                 });
 

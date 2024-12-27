@@ -50,6 +50,12 @@ class ChatRequest(BaseModel):
     model: str = "gpt-3.5-turbo"
     max_tokens: int = 1000
     temperature: float = 0.7
+    max_length: int = 16000
+    top_k: int = 50
+    top_p: float = 0.95
+    repetition_penalty: float = 1.1
+    do_sample: bool = True
+    truncation: bool = True
 
 class ChatResponse(BaseModel):
     id: str
@@ -78,14 +84,14 @@ def get_gpus(request: ChatRequest, project: TNTProject):
             formatted_prompt = format_prompt(formatted_messages)
             response = pipe(
                 formatted_prompt,
-                max_length=4096,
+                max_length=request.max_length,
                 max_new_tokens=request.max_tokens,
                 temperature=request.temperature,
-                top_k=50,
-                top_p=0.95,
-                repetition_penalty=1.1,
-                do_sample=True,
-                truncation=True,
+                top_k=request.top_k,
+                top_p=request.top_p,
+                repetition_penalty=request.repetition_penalty,
+                do_sample=request.do_sample,
+                truncation=request.truncation,
                 pad_token_id=tokenizer.eos_token_id,
                 eos_token_id=tokenizer.eos_token_id
             )
