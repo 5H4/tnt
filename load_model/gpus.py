@@ -84,8 +84,6 @@ def get_gpus(request: ChatRequest, project: TNTProject):
         user_query = new_messages[-1]['content'] if new_messages else ""
         relevant_content = file_searcher.search(user_query)
 
-        print(relevant_content)
-
         for msg in new_messages:
             project.add_message_to_conversation(conversation_id, msg['role'], msg['content'])
         
@@ -100,8 +98,9 @@ def get_gpus(request: ChatRequest, project: TNTProject):
         if relevant_content:
             # Add relevant content as context
             context_message = {
-                "role": "assistant",
-                "content": "\n\n".join([r['content'] for r in relevant_content])
+                "role": "system",
+                "content": "Relevant information from project files:\n\n" + \
+                          "\n\n".join([f"From {r['file_path']}:\n{r['content']}" for r in relevant_content])
             }
             file_path = relevant_content[0]['file_path']
             file_content = relevant_content[0]['content']
