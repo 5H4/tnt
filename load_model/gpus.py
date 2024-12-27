@@ -89,8 +89,6 @@ def get_gpus(request: ChatRequest, project: TNTProject):
         
         # Generate response
         response = None
-        
-        formatted_messages += new_messages
 
         file_path = None
         file_content = None
@@ -98,13 +96,15 @@ def get_gpus(request: ChatRequest, project: TNTProject):
         if relevant_content:
             # Add relevant content as context
             context_message = {
-                "role": "system",
+                "role": "assistant",
                 "content": "Relevant information from project files:\n\n" + \
                           "\n\n".join([f"From {r['file_path']}:\n{r['content']}" for r in relevant_content])
             }
             file_path = relevant_content[0]['file_path']
             file_content = relevant_content[0]['content']
-            formatted_messages.append(context_message)
+            new_messages.append(context_message)
+
+        formatted_messages += new_messages
 
         if dev == False:
             formatted_prompt = format_prompt(formatted_messages)
