@@ -102,6 +102,7 @@ def get_gpus(request: ChatRequest, project: TNTProject):
             }
             file_path = relevant_content[0]['file_path']
             file_content = relevant_content[0]['content']
+            project.add_message_to_conversation(conversation_id, 'assistant', file_content)
             new_messages.append(context_message)
 
         formatted_messages += new_messages
