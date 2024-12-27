@@ -14,7 +14,7 @@ from utils.file_search import FileSearcher
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 #meta-llama/Llama-3.3-70B-Instruct
-dev = True
+dev = False
 
 if dev == False:
     model_name = 'cognitivecomputations/dolphin-2.9-llama3-8b'
