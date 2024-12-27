@@ -18,14 +18,14 @@ dev = False
 if dev == False:
     model_name = 'cognitivecomputations/dolphin-2.9-llama3-8b'
 
-    # Load model and tokenizer with optimized settings for 8x 4090s
+    # Load model and tokenizer with optimized settings for 8B model
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
-        torch_dtype=torch.float16,  # or torch.bfloat16 or torch.float32
-        load_in_8bit=True,   # Use 8-bit quantization for better memory efficiency
+        torch_dtype=torch.bfloat16,  # Changed to bfloat16 for better numerical stability
+        load_in_8bit=False,  # Disabled 8-bit quantization since we're using bfloat16
         offload_folder="offload",
-        max_memory={i: "22GiB" for i in range(8)},  # Reduced from 22GiB to 20GiB
+        max_memory={i: "12GiB" for i in range(torch.cuda.device_count())},  # Dynamically set per available GPU
         trust_remote_code=True
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
