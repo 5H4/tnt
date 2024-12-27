@@ -16,7 +16,7 @@ os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 dev = False
 
 if dev == False:
-    model_name = 'cognitivecomputations/dolphin-2.9.2-qwen2-72b'
+    model_name = 'cognitivecomputations/dolphin-2.9-llama3-8b'
 
     # Load model and tokenizer with optimized settings for 8x 4090s
     model = AutoModelForCausalLM.from_pretrained(
