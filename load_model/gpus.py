@@ -6,6 +6,10 @@ import json
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from models.project import TNTProject
+import os
+
+# Set environment variable to help with memory fragmentation
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 #meta-llama/Llama-3.3-70B-Instruct
 dev = False
@@ -20,7 +24,7 @@ if dev == False:
         torch_dtype="auto",  # Automatically choose best precision
         load_in_8bit=True,   # Use 8-bit quantization for better memory efficiency
         offload_folder="offload",
-        max_memory={i: "22GiB" for i in range(8)},  # Allocate 22GB per GPU (4090 has 24GB)
+        max_memory={i: "20GiB" for i in range(8)},  # Reduced from 22GiB to 20GiB
         trust_remote_code=True
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
