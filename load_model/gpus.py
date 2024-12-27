@@ -13,16 +13,23 @@ dev = False
 if dev == False:
     model_name = 'cognitivecomputations/dolphin-2.9.2-qwen2-72b'
 
-    # Load model and tokenizer
+    # Load model and tokenizer with optimized settings for 8x 4090s
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
-        offload_folder="offload"
+        torch_dtype="auto",  # Automatically choose best precision
+        load_in_8bit=True,   # Use 8-bit quantization for better memory efficiency
+        offload_folder="offload",
+        max_memory={i: "22GiB" for i in range(8)},  # Allocate 22GB per GPU (4090 has 24GB)
+        trust_remote_code=True
     )
-    # meta-llama/Llama-3.3-70B-Instruct
-    # cognitivecomputations/dolphin-2.9.2-qwen2-72b
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    pipe = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        device_map="auto"
+    )
 else :
     model_name = ''
     model = None
