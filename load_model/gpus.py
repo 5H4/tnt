@@ -66,6 +66,8 @@ class ChatResponse(BaseModel):
     model: str
     choices: List[dict]
     usage: dict
+    file_path: Optional[str] = None
+    file_content: Optional[str] = None
 
 # Initialize file searcher
 file_searcher = FileSearcher()
