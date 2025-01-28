@@ -8,6 +8,11 @@ from threading import Timer
 import os
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from starlette.requests import Request
+
 app = FastAPI()
 
 # Add CORS middleware configuration
@@ -23,6 +28,12 @@ app.add_middleware(
 root_project_key = hashlib.sha1(b"TNT").hexdigest()
 
 from load_model.gpus import get_gpus, ChatRequest, ChatResponse
+
+templates = Jinja2Templates(directory="panel")
+
+@app.get("/index", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/v1/chat/completions")
 async def chat_completion(request: ChatRequest, x_project_key: str = Header(alias="X-Project-Key")):
